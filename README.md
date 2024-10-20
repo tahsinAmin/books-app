@@ -2,6 +2,7 @@ show result default
 search by name and title
 
 [] pagination to work
+    [] after 7, can't go back 5
 [] loading add
 [] Give Suggestions bottom of search on how to search
 [] fix pagination ui

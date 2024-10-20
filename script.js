@@ -54,6 +54,8 @@ function removeID(id) {
 }
 
 function preparePagination(url) {
+  console.log(url);
+  
   const regex = /page=(\d+)/; // Matches "page=" followed by one or more digits
 
   const match = url.match(regex);
@@ -87,15 +89,20 @@ function createPaginationDivs(currentPage, paginationElement) {
 }
 
 async function prepareData(url) {
-  console.log(url);
   let response = await fetch(url);
   let data = await response.json();
+  console.log(data);
+  
 
   preparePagination(data["next"]);
 
   list.innerHTML = "";
   for (let i = 0; i < data.results.length; i++) {
     let li = document.createElement("li");
+
+    const anchorTag = document.createElement("a");
+    anchorTag.href = `details.html?id=${data.results[i]["id"]}`;
+    anchorTag.innerText = "Click Here";
 
     let textDiv = document.createElement("div");
     textDiv.innerText = data.results[i]["title"];
@@ -143,10 +150,10 @@ async function prepareData(url) {
       // Update class based on updated wishlist
       heartDiv.classList.toggle("red-heart"); // Toggle class on click
     });
-
+    
     li.appendChild(textDiv);
     li.appendChild(heartDiv);
-
+    li.appendChild(anchorTag);
     list.appendChild(li);
   }
 }
@@ -157,7 +164,6 @@ function searchAuthorOrTitle(name) {
 }
 
 function getBooks() {
-  console.log("helolo");
 
   const urlParams = new URLSearchParams(window.location.search);
 
@@ -165,8 +171,6 @@ function getBooks() {
   let searchTerm = urlParams.get("search");
   let type = urlParams.get("type");
   let page = urlParams.get("page");
-
-  console.log("page =", page);
 
   makeAPICall(searchTerm, type, page);
 }
@@ -177,6 +181,8 @@ function makeAPICall(searchTerm, type, page) {
   if (page) {
     url = `https://gutendex.com/books?page=${page}`;
   }
+  console.log(url);
+  
   prepareData(url);
 }
 
