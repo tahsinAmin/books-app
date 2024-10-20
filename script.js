@@ -1,6 +1,6 @@
 let list = document.getElementById("list");
-const inputElement = document.getElementById("search");
 const form = document.getElementById("myForm");
+const pagination = document.getElementById("pagination");
 
 let wishlist = getWishlist();
 
@@ -26,13 +26,6 @@ form.addEventListener("submit", (event) => {
   prepareData(str);
 });
 
-inputElement.addEventListener("keypress", function (event) {
-  if (event.key === "Enter") {
-    let searchVal = inputElement.value.replace(" ", "%20");
-    searchAuthorOrTitle(searchVal);
-  }
-});
-
 function getWishlist() {
   if (localStorage.getItem("wishlist") === null) {
     return [];
@@ -44,7 +37,7 @@ function getWishlist() {
 function addToLS(id) {
   wishlist = getWishlist();
   wishlist.push(id);
-  return wishlist
+  return wishlist;
 }
 
 function removeID(id) {
@@ -55,15 +48,50 @@ function removeID(id) {
       wishlist.splice(index, 1);
     }
   });
-  
+
   // localStorage.setItem("wishlist", JSON.stringify(wishlist));
-  return wishlist
+  return wishlist;
+}
+
+function preparePagination(url) {
+  const regex = /page=(\d+)/; // Matches "page=" followed by one or more digits
+
+  const match = url.match(regex);
+
+  if (match) {
+    const currentPage = parseInt(match[1]); // Extract the captured group (page number) and convert to a number
+    console.log("current Page:", currentPage); // Output: Page number: 2
+
+    createPaginationDivs(currentPage, pagination);
+  } else {
+    console.log("No page number found in the URL");
+  }
+}
+
+function createPaginationDivs(currentPage, paginationElement) {
+  paginationElement.innerHTML = ""; // Clear existing divs
+
+  // Calculate start and end page numbers for the pagination
+  const startPage = currentPage - 1;
+  const endPage = currentPage + 3;
+
+  // Create divs for each page number within the range
+  for (let i = startPage; i <= endPage; i++) {
+    const anchorTag = document.createElement("a");
+    anchorTag.href = `?page=${i}`;
+    anchorTag.classList.add("sq-page", "max-sm:sq-hidden");
+    anchorTag.textContent = i;
+
+    paginationElement.appendChild(anchorTag);
+  }
 }
 
 async function prepareData(url) {
   console.log(url);
   let response = await fetch(url);
   let data = await response.json();
+
+  preparePagination(data["next"]);
 
   list.innerHTML = "";
   for (let i = 0; i < data.results.length; i++) {
@@ -102,7 +130,7 @@ async function prepareData(url) {
 
       // Apply red-heart class based on wishlist status
       if (wishlist.includes(id)) {
-        wishlist = removeID(id)
+        wishlist = removeID(id);
         console.log("IF =", wishlist);
       } else {
         wishlist = addToLS(id);
@@ -123,13 +151,32 @@ async function prepareData(url) {
   }
 }
 
-async function searchAuthorOrTitle(name) {
+function searchAuthorOrTitle(name) {
   let str = "https://gutendex.com/books?search=" + name;
   prepareData(str);
 }
 
-async function getBooks() {
-  let url = "https://gutendex.com/books/";
+function getBooks() {
+  console.log("helolo");
+
+  const urlParams = new URLSearchParams(window.location.search);
+
+  // Ensure search, type, and page parameters are present
+  let searchTerm = urlParams.get("search");
+  let type = urlParams.get("type");
+  let page = urlParams.get("page");
+
+  console.log("page =", page);
+
+  makeAPICall(searchTerm, type, page);
+}
+
+function makeAPICall(searchTerm, type, page) {
+  let url = "https://gutendex.com/books";
+
+  if (page) {
+    url = `https://gutendex.com/books?page=${page}`;
+  }
   prepareData(url);
 }
 

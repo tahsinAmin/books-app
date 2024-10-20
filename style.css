@@ -1,10 +1,19 @@
 li {
-    display: flex;
-    /* justify-content: space-between; */
-    align-items: center;
-    gap: 5px;
+  display: flex;
+  /* justify-content: space-between; */
+  align-items: center;
+  gap: 5px;
+}
+
+#list {
+  column-count: 4;
 }
 
 .red-heart svg {
-    fill: red;
+  fill: red;
+}
+
+#pagination {
+  display: flex;
+  gap: 5px;
 }
