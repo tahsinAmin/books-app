@@ -7,8 +7,15 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header>
-      <a href="/wishlist.html">Wishlist</a>
+    <header class="header">
+      <div class="container">
+        <div class="header__inner">
+          <nav class="header__mobile-nav hidden-lap-and-up">
+            
+          </nav>
+        </div>
+        <a href="/wishlist.html">Wishlist</a>
+      </div>
     </header>
     <form id="myForm">
       <label for="name">Name:</label>
@@ -25,6 +32,13 @@
     </form>
     <ul id="list"></ul>
     <div id="pagination"></div>
+    <div class="sq-pagination">
+       <div class="pagination">
+        <nav class="sq-navigation flex items-center" aria-label="pagination">
+          <a class="sq-previous" href="?p=1"> &lt; </a>
+        </nav>
+       </div>
+    </div>
     <script src="/script.js"></script>
   </body>
 </html>

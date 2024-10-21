@@ -61,7 +61,7 @@ function preparePagination(url) {
   const match = url.match(regex);
 
   if (match) {
-    const currentPage = parseInt(match[1]); // Extract the captured group (page number) and convert to a number
+    const currentPage = parseInt(match[1]) - 1; // Extract the captured group (page number) and convert to a number
     console.log("current Page:", currentPage); // Output: Page number: 2
 
     createPaginationDivs(currentPage, pagination);
@@ -72,10 +72,22 @@ function preparePagination(url) {
 
 function createPaginationDivs(currentPage, paginationElement) {
   paginationElement.innerHTML = ""; // Clear existing divs
+  let startPage, endPage;
 
   // Calculate start and end page numbers for the pagination
-  const startPage = currentPage - 1;
-  const endPage = currentPage + 3;
+  if (currentPage == 1) {
+    startPage = currentPage - 0;
+    endPage = currentPage + 4;
+  } else if (currentPage == 2) {
+    startPage = currentPage - 1;
+    endPage = currentPage + 3;
+  } else {
+    startPage = currentPage - 2;
+    endPage = currentPage + 2;
+  }
+ 
+  console.log(startPage, endPage);
+  
 
   // Create divs for each page number within the range
   for (let i = startPage; i <= endPage; i++) {
@@ -131,17 +143,14 @@ async function prepareData(url) {
 
     heartDiv.addEventListener("click", function () {
       let id = this.dataset.id;
-      console.log("Clicked heart with ID:", id);
 
       wishlist = getWishlist();
 
       // Apply red-heart class based on wishlist status
       if (wishlist.includes(id)) {
         wishlist = removeID(id);
-        console.log("IF =", wishlist);
       } else {
         wishlist = addToLS(id);
-        console.log("else = ", wishlist);
       }
 
       // Update localStorage
