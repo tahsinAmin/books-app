@@ -2,28 +2,36 @@ let list = document.getElementById("list");
 const form = document.getElementById("myForm");
 const pagination = document.getElementById("pagination");
 
+const loadingTextElement = document.getElementById("loading-text"); // Replace with the ID of your loading text element
+let baseBookAPI = "https://gutendex.com/books";
+
 let wishlist = getWishlist();
 
 form.addEventListener("submit", (event) => {
   event.preventDefault(); // Prevent form submission
+  let searchTerm = document.getElementById("name").value;
+  let topic = document.getElementById("topic").value;
+  let url = baseBookAPI;
 
-  const search = document.getElementById("name").value;
-  const genre = document.getElementById("choice").value;
+  const urlParams = new URLSearchParams(window.location.search);
 
-  console.log("Name:", search);
-  console.log("Choice:", genre);
-
-  let str = "https://gutendex.com/books";
-  if (search || genre) {
-    str += "?";
-    if (search) {
-      str += "search=" + search.replace(" ", "%20");
-    }
-    if (search && genre) {
-      str += "&topic=" + genre;
-    }
+  if (searchTerm) {
+    searchTerm = searchTerm.replace(" ", "%20");
+    urlParams.set("search", searchTerm);
+    url += (url.includes("?") ? "&" : "?") + `search=${searchTerm}`;
   }
-  prepareData(str);
+  if (topic) {
+    url += (url.includes("?") ? "&" : "?") + `topic=${topic}`;
+    urlParams.set("topic", topic);
+  }
+
+  window.history.replaceState(
+    {},
+    document.title,
+    `${window.location.pathname}?${urlParams.toString()}`
+  );
+
+  prepareData(url);
 });
 
 function getWishlist() {
@@ -53,9 +61,8 @@ function removeID(id) {
   return wishlist;
 }
 
-function preparePagination(url) {
+function preparePagination(url, previousExist, nextExist) {
   console.log(url);
-  
   const regex = /page=(\d+)/; // Matches "page=" followed by one or more digits
 
   const match = url.match(regex);
@@ -64,13 +71,18 @@ function preparePagination(url) {
     const currentPage = parseInt(match[1]) - 1; // Extract the captured group (page number) and convert to a number
     console.log("current Page:", currentPage); // Output: Page number: 2
 
-    createPaginationDivs(currentPage, pagination);
+    createPaginationDivs(currentPage, pagination, previousExist, nextExist);
   } else {
     console.log("No page number found in the URL");
   }
 }
 
-function createPaginationDivs(currentPage, paginationElement) {
+function createPaginationDivs(
+  currentPage,
+  paginationElement,
+  previousExist,
+  nextExist
+) {
   paginationElement.innerHTML = ""; // Clear existing divs
   let startPage, endPage;
 
@@ -85,15 +97,16 @@ function createPaginationDivs(currentPage, paginationElement) {
     startPage = currentPage - 2;
     endPage = currentPage + 2;
   }
- 
   console.log(startPage, endPage);
-  
 
   // Create divs for each page number within the range
   for (let i = startPage; i <= endPage; i++) {
     const anchorTag = document.createElement("a");
     anchorTag.href = `?page=${i}`;
     anchorTag.classList.add("sq-page", "max-sm:sq-hidden");
+    if (i == currentPage) {
+      anchorTag.classList.add("sq-active");
+    }
     anchorTag.textContent = i;
 
     paginationElement.appendChild(anchorTag);
@@ -101,98 +114,113 @@ function createPaginationDivs(currentPage, paginationElement) {
 }
 
 async function prepareData(url) {
-  let response = await fetch(url);
-  let data = await response.json();
-  console.log(data);
-  
-
-  preparePagination(data["next"]);
-
+  loadingTextElement.textContent = "Loading...";
   list.innerHTML = "";
-  for (let i = 0; i < data.results.length; i++) {
-    let li = document.createElement("li");
+  try {
+    let response = await fetch(url);
+    let data = await response.json();
+    loadingTextElement.textContent = "";
+    let previousExist = data["prevous"] ? true : false;
+    let nextExist = data["next"] ? true : false;
 
-    const anchorTag = document.createElement("a");
-    anchorTag.href = `details.html?id=${data.results[i]["id"]}`;
-    anchorTag.innerText = "Click Here";
+    preparePagination(data["next"], previousExist, nextExist);
 
-    let textDiv = document.createElement("div");
-    textDiv.innerText = data.results[i]["title"];
+    for (let i = 0; i < data.results.length; i++) {
+      let li = document.createElement("li");
 
-    let heartDiv = document.createElement("div");
-    heartDiv.dataset.id = data.results[i]["id"];
+      const anchorTag = document.createElement("a");
+      anchorTag.href = `details.html?id=${data.results[i]["id"]}`;
+      anchorTag.innerText = "Click Here";
 
-    // Create the SVG heart icon
-    row = document.createElement("tr");
-    heartDiv.innerHTML = `
-      <svg width="24" height="64" viewBox="0 0 64 64">
-        <path d="M32.012,59.616c-1.119-.521-2.365-1.141-3.707-1.859a79.264,79.264,0,0,1-11.694-7.614C6.316,42,.266,32.6.254,22.076,0.244,12.358,7.871,4.506,17.232,4.5a16.661,16.661,0,0,1,11.891,4.99l2.837,2.889,2.827-2.9a16.639,16.639,0,0,1,11.874-5.02h0c9.368-.01,17.008,7.815,17.021,17.539,0.015,10.533-6.022,19.96-16.312,28.128a79.314,79.314,0,0,1-11.661,7.63C34.369,58.472,33.127,59.094,32.012,59.616Z">
-        </path>
-      </svg>
-    `;
+      let textDiv = document.createElement("div");
+      textDiv.innerText = data.results[i]["title"];
 
-    // Check if the ID exists in the wishlist
-    let isWishlisted = wishlist.includes(heartDiv.dataset.id);
+      let heartDiv = document.createElement("div");
+      heartDiv.dataset.id = data.results[i]["id"];
 
-    // Apply red-heart class based on wishlist status
-    if (isWishlisted) {
-      heartDiv.classList.add("red-heart");
-    } else {
-      heartDiv.classList.remove("red-heart");
-    }
+      // Create the SVG heart icon
+      row = document.createElement("tr");
+      heartDiv.innerHTML = `
+        <svg width="24" height="64" viewBox="0 0 64 64">
+          <path d="M32.012,59.616c-1.119-.521-2.365-1.141-3.707-1.859a79.264,79.264,0,0,1-11.694-7.614C6.316,42,.266,32.6.254,22.076,0.244,12.358,7.871,4.506,17.232,4.5a16.661,16.661,0,0,1,11.891,4.99l2.837,2.889,2.827-2.9a16.639,16.639,0,0,1,11.874-5.02h0c9.368-.01,17.008,7.815,17.021,17.539,0.015,10.533-6.022,19.96-16.312,28.128a79.314,79.314,0,0,1-11.661,7.63C34.369,58.472,33.127,59.094,32.012,59.616Z">
+          </path>
+        </svg>
+      `;
 
-    heartDiv.addEventListener("click", function () {
-      let id = this.dataset.id;
-
-      wishlist = getWishlist();
+      // Check if the ID exists in the wishlist
+      let isWishlisted = wishlist.includes(heartDiv.dataset.id);
 
       // Apply red-heart class based on wishlist status
-      if (wishlist.includes(id)) {
-        wishlist = removeID(id);
+      if (isWishlisted) {
+        heartDiv.classList.add("red-heart");
       } else {
-        wishlist = addToLS(id);
+        heartDiv.classList.remove("red-heart");
       }
 
-      // Update localStorage
-      localStorage.setItem("wishlist", JSON.stringify(wishlist));
+      heartDiv.addEventListener("click", function () {
+        let id = this.dataset.id;
 
-      // Update class based on updated wishlist
-      heartDiv.classList.toggle("red-heart"); // Toggle class on click
-    });
-    
-    li.appendChild(textDiv);
-    li.appendChild(heartDiv);
-    li.appendChild(anchorTag);
-    list.appendChild(li);
+        wishlist = getWishlist();
+
+        // Apply red-heart class based on wishlist status
+        if (wishlist.includes(id)) {
+          wishlist = removeID(id);
+        } else {
+          wishlist = addToLS(id);
+        }
+
+        // Update localStorage
+        localStorage.setItem("wishlist", JSON.stringify(wishlist));
+
+        // Update class based on updated wishlist
+        heartDiv.classList.toggle("red-heart"); // Toggle class on click
+      });
+
+      li.appendChild(textDiv);
+      li.appendChild(heartDiv);
+      li.appendChild(anchorTag);
+      list.appendChild(li);
+    }
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    loadingTextElement.textContent = "Error loading data";
+    throw error; // Re-throw the error for further handling
   }
 }
 
-function searchAuthorOrTitle(name) {
-  let str = "https://gutendex.com/books?search=" + name;
-  prepareData(str);
+function makeAPICall(searchTerm, topic, page) {
+  let url = baseBookAPI;
+
+  // If a search term is provided, add it as a query parameter
+  if (searchTerm) {
+    url += `?search=${encodeURIComponent(searchTerm)}`;
+  }
+
+  // Optionally, add other topics or filters if necessary
+  if (topic) {
+    url +=
+      (url.includes("?") ? "&" : "?") + `topic=${encodeURIComponent(topic)}`;
+  }
+
+  // If a page is provided, append it as a query parameter
+  if (page) {
+    // Check if '?' already exists in the URL to decide whether to use '&' or '?'
+    url += (url.includes("?") ? "&" : "?") + `page=${page}`;
+  }
+
+  // Call the function to prepare data with the constructed URL
+  prepareData(url);
 }
 
 function getBooks() {
-
   const urlParams = new URLSearchParams(window.location.search);
 
-  // Ensure search, type, and page parameters are present
+  // Ensure search, topic, and page parameters are present
   let searchTerm = urlParams.get("search");
-  let type = urlParams.get("type");
+  let topic = urlParams.get("topic");
   let page = urlParams.get("page");
 
-  makeAPICall(searchTerm, type, page);
-}
-
-function makeAPICall(searchTerm, type, page) {
-  let url = "https://gutendex.com/books";
-
-  if (page) {
-    url = `https://gutendex.com/books?page=${page}`;
-  }
-  console.log(url);
-  
-  prepareData(url);
+  makeAPICall(searchTerm, topic, page);
 }
 
 document.addEventListener("DOMContentLoaded", getBooks);
